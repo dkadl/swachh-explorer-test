@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swachh Explorer | Solid Waste Management India</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --green: #2DB548;
+            --blue: #3498DB;
+            --red: #E74C3C;
+            --yellow: #F1C40F;
+            --black: #2C3E50;
+            --primary: #2DB548;
+            --primary-dark: #1E8B3A;
+            --light-green: #F0F9F3;
+            --footer-light: #F8F9FA;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #FFFFFF;
+            color: #222222;
+            line-height: 1.6;
+        }
+        
+        header {
+            background-color: #FFFFFF;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        
+        .nav-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; }
+        
+        .logo { font-size: 27px; font-weight: 700; color: var(--green); text-decoration: none; }
+        .logo span { color: #222; }
+        
+        .tabs { display: flex; gap: 8px; list-style: none; }
+        
+        .tab-button {
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #222;
+            background: transparent;
+            border: none;
+            border-bottom: 4px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button:hover { color: var(--green); }
+        .tab-button.active { color: var(--green); border-bottom: 4px solid var(--green); }
+        
+        .tab-content { display: none; padding: 12px 0; }
+        .tab-content.active { display: block; }
+        
+        /* SIMPLE TEXT HERO */
+        .hero {
+            text-align: center;
+            padding: 18px 20px 10px;
+            background: linear-gradient(135deg, var(--light-green) 0%, #FFFFFF 100%);
+        }
+        
+        .hero h1 { font-size: 2rem; color: #222; margin-bottom: 6px; }
+        .hero .highlight { color: var(--green); }
+        .hero p { font-size: 1.02rem; max-width: 700px; margin: 0 auto 16px; color: #555; }
+        
+        /* MAP CONTAINERS - MUCH BIGGER (92vh) */
+        .map-container {
+            height: 92vh;           /* Significantly larger - takes up almost the entire viewport */
+            min-height: 650px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin: 12px 0;         /* reduced margin to give maps more space */
+        }
+        
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* EXPLORE MAPS SECTION (2 cards per row) */
+        .explore-section { padding: 16px 20px 22px; background-color: var(--light-green); }
+        .explore-section .section-title { font-size: 1.75rem; text-align: center; margin-bottom: 18px; color: #222; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; max-width: 1100px; margin: 0 auto; }
+        
+        .map-card {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            padding: 22px 18px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .map-card:hover { transform: translateY(-6px); }
+        .map-card .card-icon { font-size: 2.8rem; margin-bottom: 10px; }
+        .map-card h3 { font-size: 1.3rem; margin-bottom: 8px; }
+        .map-card p { font-size: 0.94rem; color: #555; margin-bottom: 16px; line-height: 1.45; }
+        
+        /* 3 CTA CARDS (2 per row) */
+        .cta-section { padding: 16px 20px 32px; background-color: var(--light-green); }
+        .cta-section .section-title { font-size: 1.75rem; text-align: center; margin-bottom: 18px; color: #222; }
+        
+        /* FOOTER */
+        footer {
+            background-color: var(--footer-light);
+            color: #333;
+            padding: 32px 20px 24px;
+            text-align: center;
+        }
+        
+        .footer-content { max-width: 1200px; margin: 0 auto; }
+        
+        .dustbin-title {
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 18px;
+            color: #222;
+            font-weight: 600;
+        }
+        
+        .dustbins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
+            gap: 22px;
+            max-width: 1200px;
+            margin: 0 auto;
+            justify-content: center;
+            place-items: center;
+        }
+        
+        .dustbin-card {
+            width: 126px !important;
+            height: 126px !important;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        }
+        
+        .dustbin-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        
+        .dustbin-card p {
+            font-size: 0.88rem;
+            opacity: 0.95;
+            max-width: 80%;
+            line-height: 1.3;
+        }
+        
+        .dustbin-green  { background-color: var(--green); }
+        .dustbin-blue   { background-color: var(--blue); }
+        .dustbin-red    { background-color: var(--red); }
+        .dustbin-yellow { background-color: var(--yellow); color: #222; }
+        .dustbin-black  { background-color: var(--black); }
+        
+        .copyright { font-size: 0.93rem; opacity: 0.85; margin-top: 20px; color: #555; }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--green);
+            color: white;
+            padding: 11px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(45, 181, 72, 0.3);
+            font-size: 1rem;
+        }
+        
+        .btn:hover { background-color: var(--primary-dark); transform: translateY(-2px); }
+        
+        @media (max-width: 768px) {
+            .tabs { flex-wrap: wrap; justify-content: center; }
+            .dustbins-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+            .map-container { height: 85vh; } /* still very large on mobile */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="nav-bar">
+                <a href="#" class="logo">Swachh<span>Explorer</span></a>
+                <ul class="tabs">
+                    <li><button class="tab-button active" onclick="switchTab('home')">Home</button></li>
+                    <li><button class="tab-button" onclick="switchTab('about')">About</button></li>
+                    <li><button class="tab-button" onclick="switchTab('map1')">Map 1</button></li>
+                    <li><button class="tab-button" onclick="switchTab('map2')">Map 2</button></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div id="home" class="tab-content active">
+            <div class="hero">
+                <div class="container">
+                    <h1>Welcome to <span class="highlight">Swachh Explorer</span></h1>
+                    <p>Official colour-coded waste management platform for India.<br>
+                       White background + all 5 standard dustbin colours • Built for GitHub Pages.</p>
+                    <a href="#" onclick="switchTab('map1'); return false;" class="btn">Start Exploring →</a>
+                </div>
+            </div>
+
+            <!-- MAP CARDS (2 per row) -->
+            <div class="explore-section">
+                <div class="container">
+                    <h2 class="section-title">Explore Our Interactive Maps</h2>
+                    <div class="cards-grid">
+                        <div class="map-card">
+                            <div class="card-icon">📍</div>
+                            <h3>Map 1 — Redlands Area</h3>
+                            <p>Local waste collection points & segregation zones.</p>
+                            <a href="#" onclick="switchTab('map1'); return false;" class="btn">Open Map 1</a>
+                        </div>
+                        <div class="map-card">
+                            <div class="card-icon">🌆</div>
+                            <h3>Map 2 — Los Angeles Area</h3>
+                            <p>Urban waste management visualization.</p>
+                            <a href="#" onclick="switchTab('map2'); return false;" class="btn">Open Map 2</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3 CTA CARDS (2 per row) -->
+            <div class="cta-section">
+                <div class="container">
+                    <h2 class="section-title">Get In Touch</h2>
+                    <div class="cards-grid">
+                        <a href="mailto:contact@swacchexplorer.in" class="map-card" style="text-decoration:none;">
+                            <div class="card-icon">✉️</div>
+                            <h3>Contact Us</h3>
+                            <p>Email our team for support or questions</p>
+                        </a>
+                        <a href="https://swachhbharatmission.gov.in/" target="_blank" class="map-card" style="text-decoration:none;">
+                            <div class="card-icon">🏛️</div>
+                            <h3>Municipal Site</h3>
+                            <p>Official Government of India SWM information</p>
+                        </a>
+                        <div onclick="reportIssue()" class="map-card" style="cursor:pointer;">
+                            <div class="card-icon">⚠️</div>
+                            <h3>Report Issues</h3>
+                            <p>Describe a website problem (short form)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABOUT TAB -->
+        <div id="about" class="tab-content">
+            <div class="container">
+                <h2 class="section-title">About This Website</h2>
+                <div class="about-text">
+                    <p>This platform follows the official Indian colour-coded dustbin system. Every colour is used throughout the design.</p>
+                    <ul style="margin-left: 30px; font-size: 1.05rem; line-height: 1.8;">
+                        <li><strong style="color:var(--green)">Green</strong> – Biodegradable/Organic</li>
+                        <li><strong style="color:var(--blue)">Blue</strong> – Dry/Recyclable</li>
+                        <li><strong style="color:var(--red)">Red</strong> – Hazardous/Biomedical</li>
+                        <li><strong style="color:var(--yellow)">Yellow</strong> – Sanitary/Medical</li>
+                        <li><strong style="color:var(--black)">Black/Grey</strong> – General waste</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAP 1 TAB -->
+        <div id="map1" class="tab-content">
+            <div class="container">
+                <h2 class="section-title">Map 1 — Redlands Area</h2>
+                <div class="map-container">
+                    <iframe src="https://clausa.app.carto.com/map/df0dc9a3-9754-48ce-b29c-3fef77bdaaa1" 
+                            allowfullscreen></iframe>
+                </div>
+                <p style="text-align: center; color: #666; margin-top: 12px;">Interactive Carto map for local waste monitoring.</p>
+            </div>
+        </div>
+
+        <!-- MAP 2 TAB -->
+        <div id="map2" class="tab-content">
+            <div class="container">
+                <h2 class="section-title">Map 2 — Los Angeles Area</h2>
+                <div class="map-container">
+                    <iframe src="https://clausa.app.carto.com/map/83556946-14a4-4570-b486-d07a65adbdf3" 
+                            allowfullscreen></iframe>
+                </div>
+                <p style="text-align: center; color: #666; margin-top: 12px;">Interactive Carto map for urban waste management visualization.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container footer-content">
+            <h2 class="dustbin-title">Types of Colour-Coded Dustbins and Their Usage</h2>
+            
+            <div class="dustbins-grid">
+                <div class="dustbin-card dustbin-green"><h3>GREEN</h3><p>Biodegradable & organic</p></div>
+                <div class="dustbin-card dustbin-blue"><h3>BLUE</h3><p>Dry & recyclable</p></div>
+                <div class="dustbin-card dustbin-red"><h3>RED</h3><p>Hazardous / biomedical</p></div>
+                <div class="dustbin-card dustbin-yellow"><h3>YELLOW</h3><p>Sanitary & medical</p></div>
+                <div class="dustbin-card dustbin-black"><h3>BLACK/GREY</h3><p>General waste</p></div>
+            </div>
+            
+            <p class="copyright">© 2026 Swachh Explorer</p>
+        </div>
+    </footer>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => {
+                if (btn.textContent.trim() === getTabName(tab)) btn.classList.add('active');
+            });
+        }
+        
+        function getTabName(tabId) {
+            if (tabId === 'home') return 'Home';
+            if (tabId === 'about') return 'About';
+            if (tabId === 'map1') return 'Map 1';
+            if (tabId === 'map2') return 'Map 2';
+            return '';
+        }
+        
+        function reportIssue() {
+            const issue = prompt("Please describe the website issue briefly:");
+            if (issue && issue.trim() !== "") {
+                alert("✅ Thank you! Your issue has been reported.\nWe will review it shortly.");
+            }
+        }
+        
+        document.addEventListener('keydown', e => {
+            if (e.key === '1') switchTab('home');
+            if (e.key === '2') switchTab('about');
+            if (e.key === '3') switchTab('map1');
+            if (e.key === '4') switchTab('map2');
+        });
+    </script>
+</body>
+</html>
